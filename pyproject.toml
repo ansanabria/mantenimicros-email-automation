@@ -1,0 +1,35 @@
+[project]
+name = "email-automation"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Andrés Sanabria", email = "ansanabria@proton.me" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "fastapi>=0.135.1",
+    "httpx>=0.28.1",
+    "msal>=1.35.1",
+    "openpyxl>=3.1.5",
+    "pydantic-ai-slim[openai]>=1.68.0",
+    "pydantic-settings>=2.13.1",
+    "pypdf>=6.9.0",
+    "rapidfuzz>=3.14.3",
+    "sqlalchemy>=2.0.48",
+    "uvicorn>=0.42.0",
+]
+
+[project.scripts]
+email-automation = "email_automation:main"
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.6",
+]
