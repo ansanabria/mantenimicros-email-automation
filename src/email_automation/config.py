@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +13,8 @@ class Settings(BaseSettings):
 
     app_name: str = "email-automation"
     app_env: str = "development"
+    # Public-facing base URL (e.g. the ngrok tunnel URL).
+    # All other derived URLs default to this value when not set explicitly.
     base_url: str = "http://localhost:8000"
 
     database_url: str = "sqlite+aiosqlite:///./data/email_automation.db"
@@ -42,7 +44,15 @@ class Settings(BaseSettings):
     telegram_bot_token: str | None = None
     telegram_chat_id: str | None = None
     telegram_webhook_secret: str = Field(default="change-me")
+    # If not set explicitly, defaults to base_url (the ngrok tunnel URL).
+    # This means you only need to update BASE_URL in .env when ngrok restarts.
     telegram_webhook_url: str | None = None
+
+    @model_validator(mode="after")
+    def _derive_telegram_webhook_url(self) -> "Settings":
+        if not self.telegram_webhook_url:
+            self.telegram_webhook_url = self.base_url
+        return self
 
 
 @lru_cache(maxsize=1)
