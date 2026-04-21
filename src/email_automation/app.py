@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager, suppress
 from html import escape
 
@@ -19,10 +20,13 @@ from email_automation.services.microsoft_graph import MicrosoftGraphClient
 from email_automation.services.openrouter import OpenRouterClient
 from email_automation.services.telegram_bot import TelegramBotService
 
+logger = logging.getLogger(__name__)
+
 
 class AppContainer:
     def __init__(self, settings: Settings):
         self.settings = settings
+        self.inbox_lock = asyncio.Lock()
         self.openrouter = OpenRouterClient(settings)
         self.attachments = AttachmentService(settings, openrouter=self.openrouter)
         self.classification = ClassificationService(self.openrouter)
@@ -36,6 +40,10 @@ class AppContainer:
             matching=self.matching,
             telegram=self.telegram,
         )
+
+    async def process_inbox(self, session: AsyncSession) -> dict[str, int]:
+        async with self.inbox_lock:
+            return await self.intake.process_inbox(session)
 
 
 async def approve_match(
@@ -96,9 +104,9 @@ async def polling_loop(container: AppContainer) -> None:
     while True:
         try:
             async with AsyncSessionLocal() as session:
-                await container.intake.process_inbox(session)
+                await container.process_inbox(session)
         except Exception:
-            pass
+            logger.exception("Inbox polling failed")
         await asyncio.sleep(container.settings.polling_interval_seconds)
 
 
@@ -129,7 +137,7 @@ def create_app() -> FastAPI:
     @app.post("/internal/process-inbox")
     async def process_inbox(session: AsyncSession = Depends(get_db)) -> dict[str, int]:
         container: AppContainer = app.state.container
-        return await container.intake.process_inbox(session)
+        return await container.process_inbox(session)
 
     @app.post("/telegram/webhook/{secret}")
     async def telegram_webhook(

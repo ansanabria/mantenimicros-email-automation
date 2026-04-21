@@ -1,4 +1,7 @@
-from email_automation.app import create_app
+def create_app():
+    from email_automation.app import create_app as app_factory
+
+    return app_factory()
 
 
 def main() -> None:

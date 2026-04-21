@@ -44,6 +44,8 @@ class EmailMessage(Base):
     subject: Mapped[str] = mapped_column(String(500))
     body_text: Mapped[str] = mapped_column(Text)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    is_read: Mapped[bool] = mapped_column(default=False, index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     category: Mapped[EmailCategory] = mapped_column(SqlEnum(EmailCategory), index=True)
     classification_confidence: Mapped[float] = mapped_column(Float, default=0.0)
     classification_reasoning: Mapped[str | None] = mapped_column(Text)

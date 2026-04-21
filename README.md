@@ -26,12 +26,14 @@ Python backend for classifying inbound supplier/client emails, storing structure
 Create a `.env` file with at least:
 
 ```env
+MICROSOFT_AUTH_MODE=application
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=google/gemini-2.5-flash-lite
 MICROSOFT_TENANT_ID=
 MICROSOFT_CLIENT_ID=
 MICROSOFT_CLIENT_SECRET=
 MICROSOFT_MAILBOX=
+MICROSOFT_TOKEN_CACHE_PATH=data/msal_token_cache.json
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 TELEGRAM_WEBHOOK_SECRET=change-me
@@ -55,8 +57,19 @@ SALES_SIGNATURE=Equipo Comercial
 
 ```bash
 uv sync
+uv run email-automation-auth  # only for MICROSOFT_AUTH_MODE=delegated
 uv run email-automation
 ```
+
+### Personal Outlook (`@outlook.com`) setup
+
+- Set `MICROSOFT_AUTH_MODE=delegated`
+- Set `MICROSOFT_TENANT_ID=consumers`
+- Set `MICROSOFT_CLIENT_ID` to a public-client app registration that allows personal Microsoft accounts
+- Leave `MICROSOFT_CLIENT_SECRET` empty
+- The app uses `/me/...` Graph endpoints in delegated mode, so `MICROSOFT_MAILBOX` is not required
+- Run `uv run email-automation-auth` once in a terminal and complete the device-code sign-in flow
+- Keep `MICROSOFT_TOKEN_CACHE_PATH` on persistent storage if you deploy the app remotely
 
 ## Railway deployment
 

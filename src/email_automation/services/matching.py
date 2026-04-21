@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from rapidfuzz import fuzz
-from sqlalchemy import Select, select
+from sqlalchemy import Select, and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -42,10 +42,21 @@ class MatchingService:
         self.openrouter = openrouter
 
     async def find_matches_for_request(self, session: AsyncSession, request: ClientRequest) -> list[MatchCandidate]:
+        existing_offer_ids = set(
+            (
+                await session.scalars(
+                    select(MatchCandidate.supplier_offer_id).where(
+                        MatchCandidate.client_request_id == request.id
+                    )
+                )
+            ).all()
+        )
         offers = await session.scalars(self._active_offers_query())
         created_matches: list[MatchCandidate] = []
 
         for offer in offers:
+            if offer.id in existing_offer_ids:
+                continue
             evaluation = await self.evaluate(request, offer)
             if evaluation.score < self.settings.match_threshold:
                 continue
@@ -162,5 +173,13 @@ class MatchingService:
         return (
             select(SupplierOffer)
             .options(selectinload(SupplierOffer.email))
-            .where((SupplierOffer.valid_until.is_(None)) | (SupplierOffer.valid_until >= cutoff))
+            .where(
+                or_(
+                    SupplierOffer.valid_until >= cutoff,
+                    and_(
+                        SupplierOffer.valid_until.is_(None),
+                        SupplierOffer.created_at >= cutoff,
+                    ),
+                )
+            )
         )

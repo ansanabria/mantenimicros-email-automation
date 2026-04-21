@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from email_automation.models import EmailCategory, MatchStatus, RequestKind
 
@@ -27,6 +27,7 @@ class EmailEnvelope(BaseModel):
     subject: str
     body_text: str
     received_at: datetime
+    is_read: bool = False
     attachments: list[AttachmentDocument] = Field(default_factory=list)
     raw_payload: dict[str, Any] = Field(default_factory=dict)
 
@@ -42,6 +43,13 @@ class SupplierOfferDraft(BaseModel):
     notes: str | None = None
     source_excerpt: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_string_offer(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return {"product_name": value, "source_excerpt": value}
+        return value
+
 
 class ClientRequestDraft(BaseModel):
     summary: str
@@ -53,6 +61,17 @@ class ClientRequestDraft(BaseModel):
     currency: str | None = None
     required_specs: dict[str, Any] = Field(default_factory=dict)
     notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_string_request(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return {
+                "summary": value,
+                "request_kind": RequestKind.USE_CASE,
+                "use_case": value,
+            }
+        return value
 
 
 class ClassificationResult(BaseModel):

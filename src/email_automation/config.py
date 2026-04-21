@@ -1,12 +1,15 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     app_name: str = "email-automation"
     app_env: str = "development"
@@ -31,8 +34,10 @@ class Settings(BaseSettings):
     microsoft_tenant_id: str | None = None
     microsoft_client_id: str | None = None
     microsoft_client_secret: str | None = None
+    microsoft_auth_mode: Literal["application", "delegated"] = "application"
     microsoft_mailbox: str | None = None
     microsoft_graph_base_url: str = "https://graph.microsoft.com/v1.0"
+    microsoft_token_cache_path: Path = Path("data/msal_token_cache.json")
 
     telegram_bot_token: str | None = None
     telegram_chat_id: str | None = None
@@ -44,4 +49,5 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     settings = Settings()
     settings.attachment_storage_path.mkdir(parents=True, exist_ok=True)
+    settings.microsoft_token_cache_path.parent.mkdir(parents=True, exist_ok=True)
     return settings
